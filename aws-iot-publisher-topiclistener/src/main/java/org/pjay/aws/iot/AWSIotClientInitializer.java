@@ -54,9 +54,13 @@ public class AWSIotClientInitializer implements InitializingBean, DisposableBean
     private void initClient(CommandArguments arguments) {
         String clientEndpoint = arguments.getNotNull("clientEndpoint", SampleUtil.getConfig("clientEndpoint"));
         String clientId = arguments.getNotNull("clientId", SampleUtil.getConfig("clientId"));
-
+        
         String certificateFile = arguments.get("certificateFile", SampleUtil.getConfig("certificateFile"));
         String privateKeyFile = arguments.get("privateKeyFile", SampleUtil.getConfig("privateKeyFile"));
+        // Alternative way to package certificates as resource and do not depend on absolute from each machine we deploy
+        // Copy your certificate files to resource folder of same package of this class, org/pjay/aws/iot/<you files here>
+        //String certificateFile =  AWSIotClientInitializer.class.getResource("6a12341cfd-certificate.pem").getPath();
+        //String privateKeyFile = AWSIotClientInitializer.class.getResource("6a12341cfd-private.pem.key").getPath();
         if (awsIotClient == null && certificateFile != null && privateKeyFile != null) {
             String algorithm = arguments.get("keyAlgorithm", SampleUtil.getConfig("keyAlgorithm"));
             KeyStorePasswordPair pair = SampleUtil.getKeyStorePasswordPair(certificateFile, privateKeyFile, algorithm);
