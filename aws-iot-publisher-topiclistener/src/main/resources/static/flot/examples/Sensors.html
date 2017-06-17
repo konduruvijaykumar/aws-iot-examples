@@ -1,0 +1,189 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+ <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Sensor Data</title>
+    <link href="layout.css" rel="stylesheet" type="text/css">
+	<style>
+		.legendLabel
+		{
+			color:Black;
+		}
+	</style>
+    <!--[if lte IE 8]><script language="javascript" type="text/javascript" src="../excanvas.min.js"></script><![endif]-->
+    <script language="javascript" type="text/javascript" src="../jquery.js"></script>
+    <script language="javascript" type="text/javascript" src="../jquery.flot.js"></script>
+	<script language="javascript" type="text/javascript" src="../jquery.flot.time.js"></script>    
+	<script language="javascript" type="text/javascript" src="../jquery.flot.axislabels.js"></script>
+ </head>
+    <body>
+    <h1>Sensor Data</h1>
+
+    <!-- <div id="flot-placeholder1" style="width:600px;height:300px;"></div> -->
+	<div id="flot-placeholder1" style="width:800px;height:450px;"></div>
+
+
+<script type="text/javascript">
+var temperature = [], humidity = [];
+var dataset;
+var totalPoints = 100;
+//var updateInterval = 2000;
+var updateInterval = 6000;
+var now = new Date().getTime();
+
+// tickSize: [20, "second"]
+var options = {
+    series: {
+        lines: {
+            lineWidth: 1.2
+        },
+        bars: {
+            align: "center",
+            fillColor: { colors: [{ opacity: 1 }, { opacity: 1}] },
+            barWidth: 500,
+            lineWidth: 1
+        }
+    },
+    xaxis: {
+        mode: "time",
+        tickSize: [30, "second"],
+        tickFormatter: function (v, axis) {
+            var date = new Date(v);
+
+            if (date.getSeconds() % 20 == 0) {
+                var hours = date.getHours() < 10 ? "0" + date.getHours() : date.getHours();
+                var minutes = date.getMinutes() < 10 ? "0" + date.getMinutes() : date.getMinutes();
+                var seconds = date.getSeconds() < 10 ? "0" + date.getSeconds() : date.getSeconds();
+
+                return hours + ":" + minutes + ":" + seconds;
+            } else {
+                return "";
+            }
+        },
+        axisLabel: "Time",
+        axisLabelUseCanvas: true,
+        axisLabelFontSizePixels: 12,
+        axisLabelFontFamily: 'Verdana, Arial',
+        axisLabelPadding: 10
+    },
+    yaxes: [
+        {
+            min: 0,
+            max: 100,
+            tickSize: 5,
+            tickFormatter: function (v, axis) {
+                if (v % 10 == 0) {
+                    return v + "&#8451;";
+                } else {
+                    return "";
+                }
+            },
+            axisLabel: "Temperature",
+            axisLabelUseCanvas: true,
+            axisLabelFontSizePixels: 12,
+            axisLabelFontFamily: 'Verdana, Arial',
+            axisLabelPadding: 6
+        }, {
+		    min: 0,
+            max: 100,
+            tickSize: 5,
+            tickFormatter: function (v, axis) {
+                if (v % 10 == 0) {
+                    return v + "%";
+                } else {
+                    return "";
+                }
+            },
+            position: "right",
+            axisLabel: "Humidity",
+            axisLabelUseCanvas: true,
+            axisLabelFontSizePixels: 12,
+            axisLabelFontFamily: 'Verdana, Arial',
+            axisLabelPadding: 6
+        }
+    ],
+    legend: {
+        noColumns: 0,
+        position:"nw"
+    },
+    grid: {      
+        backgroundColor: { colors: ["#ffffff", "#EDF5FF"] }
+    }
+};
+
+function initData() {
+    for (var i = 0; i < totalPoints; i++) {
+        var temp = [now += updateInterval, 0];
+
+        temperature.push(temp);
+        humidity.push(temp);
+    }
+}
+
+function GetData() {
+    $.ajaxSetup({ cache: false });
+
+    // url: "http://localhost:8080/ArduinoTemperatureHumidityApp/services/sensors/sensordata"
+    // url: "http://localhost:8080/aws-iot-publisher-topiclistener/sensors/sensordata"
+    $.ajax({
+        url: "/sensors/sensordata",
+        contentType: "application/json",
+		type: "GET",
+		crossDomain:true,
+        success: update,
+        error: function () {
+			//alert("Hi...");
+            setTimeout(GetData, updateInterval);
+        }
+    });
+}
+
+var temp;
+
+function update(_data) {
+// {"temperature":47, "core":11, "humidity":550}
+// {"temperaturelabel":"Temperature","humiditylabel":"Humidity","time":1450185550000,"temperature":27.0,"humidity":48}
+//alert("Hi...");
+    temperature.shift();
+    humidity.shift();
+
+    now += updateInterval
+
+    temp = [now, _data.temperature];
+    temperature.push(temp);
+
+    temp = [now, _data.humidity];
+    humidity.push(temp);
+    
+    //{ label: _data.temperaturelabel+":" + _data.temperature + "&#8451;", data: temperature, lines: { lineWidth: 1.2 }, color: "#00FF00" },
+    //{ label: _data.humiditylabel+":" + _data.humidity + "%", data: humidity, color: "#0044FF", lines: { lineWidth: 1.2 }, yaxis: 2 }  
+
+    dataset = [
+        { label: "Temperature:" + _data.temperature + "&#8451;", data: temperature, lines: { lineWidth: 1.2 }, color: "#00FF00" },
+        { label: "Humidity:" + _data.humidity + "%", data: humidity, color: "#0044FF", lines: { lineWidth: 1.2 }, yaxis: 2 }       
+    ];
+
+    $.plot($("#flot-placeholder1"), dataset, options);
+    setTimeout(GetData, updateInterval);
+}
+
+
+$(document).ready(function () {
+    initData();
+
+    dataset = [        
+        { label: "Temperature:", data: temperature, lines:{lineWidth:1.2}, color: "#00FF00" },
+        { label: "Humidity:", data: humidity, color: "#0044FF", lines: { lineWidth: 1.2 }, yaxis: 2 }
+    ];
+
+    $.plot($("#flot-placeholder1"), dataset, options);
+    setTimeout(GetData, updateInterval);
+});
+
+// {"temperature":47, "core":11, "humidity":550}
+// {"temperaturelabel":"Temperature","humiditylabel":"Humidity","time":1450185550000,"temperature":27.0,"humidity":48}
+
+</script>
+
+ </body>
+</html>
