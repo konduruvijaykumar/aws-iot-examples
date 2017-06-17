@@ -75,8 +75,8 @@ public class TopicListener extends AWSIotTopic {
 			sensorData = mapper.readValue(message.getStringPayload(), SensorData.class);
 			if(null != sensorData){
 				// We will add humidity logic as hack to test this code,instead of temperature. Which can be easily tested in lab
-				if(sensorData.getHumidity() >= 88F){
-					// if(sensorData.getTemperature() >= 48F){
+				if(sensorData.getHumidity() >= 88F){// we can avoid many calls to light on with sensorData.getHumidity() >= 88F && !wasActuatorTriggeredLast
+					// if(sensorData.getTemperature() >= 48F){// we can avoid many calls to light on with sensorData.getTemperature() >= 48F && !wasActuatorTriggeredLast
 					// if(sensorData.getHumidity() >= 88F){
 					payload = mapper.writeValueAsString(new LightOnOff(true));
 					publishMessage(payload);
